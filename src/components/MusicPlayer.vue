@@ -275,8 +275,9 @@ export default {
       const listLength = this.songList.length;
       for (let i = 0; i <= listLength; i++) {
         if (song.id === this.songList[i].id) {
-          // 代替push，才能让computed监听到数组变化
-          this.$set(this.songList, i, song);
+          // 原本使用$set的部分，现已废弃需要学习vue3新的监听方式
+          // 但是目前似乎不用￥set也能监听到???
+          this.songList[i] = song;
           this.currentIndex = i;
           i = listLength;
           return;

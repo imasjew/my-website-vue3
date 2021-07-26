@@ -94,9 +94,6 @@ export default {
         return;
       }
       this.$router.push("?name=" + this.input);
-      console.log('111')
-      console.log('222')
-      console.log('333')
       httpService.getSongList(this.input).then(
         (res) => {
           const songs = res.result.songs;
