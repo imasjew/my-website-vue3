@@ -9,7 +9,7 @@ const Music = () => import('@/pages/routes/music/Music')
 const MusicList = () => import('@/pages/routes/music/MusicList')
 const MusicLyric = () => import('@/pages/routes/music/MusicLyric')
 const Game = () => import('@/pages/routes/game/Game')
-// import Errorpage from '@/pages/errorpage'
+const ErrorPage = () => import('@/pages/ErrorPage')
 // import accountService from "@/service/account.service";
 // import VueRouter from 'vue-router'
 
@@ -54,11 +54,11 @@ const routes = [
 			{ path: 'game', name: 'game', component: Game }
 		]
 	},
-	// {
-	// 	path: '/errorpage',
-	// 	name: 'errorpage',
-	// 	component: Errorpage
-	// }
+	{
+		path: '/errorpage',
+		name: 'errorpage',
+		component: ErrorPage
+	}
 ]
 
 // router.beforeEach(async (to, from, next) => {

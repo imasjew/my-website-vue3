@@ -8,41 +8,51 @@
 <script>
 import httpService from "@/service/http.service";
 import accountService from "@/service/account.service";
+import { ElNotification } from 'element-plus'
+import { onMounted } from 'vue';
+import { useRouter } from 'vue-router'
 
+// import {ref, reactive, toRaw } from 'vue'
 export default {
   name: "dashboard",
-  created() {
-    this.checkAuth();
-  },
-  methods: {
-    checkAuth() {
+  // created() {
+  //   this.checkAuth();
+  // },
+  setup() {
+    onMounted(() => {
+      checkAuth()
+    })
+    const router = useRouter();
+    const checkAuth = () => {
       httpService.auth().then(
         (res) => {
-          this.showSuccess(res.message);
-          // this.result = res.message;
+          showSuccess(res.message);
         },
         (err) => {
           console.log('err', err)
-          this.showReject(err.data.message);
-          this.$router.push("/errorpage");
+          showReject(err.data.message);
+          router.push("/errorpage");
           accountService.logout();
         }
       );
-    },
-    showSuccess(title, msg) {
-      this.$notify({
+    }
+    const showSuccess = (title, msg) => {
+      ElNotification({
         title: title,
         message: msg,
         type: "success",
       });
-    },
-    showReject(title, msg) {
-      this.$notify.info({
+    }
+    const showReject = (title, msg) => {
+      ElNotification({
         title: title,
         message: msg,
       });
-    },
-  },
+    }
+    return {
+      checkAuth
+    }
+  }
 };
 </script>
 
