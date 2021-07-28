@@ -40,12 +40,13 @@
 <script>
 import httpService from "@/service/http.service";
 import Bus from "@/bus";
-import { ref, onMounted } from "vue";
-import { useRouter, onBeforeRouteUpdate } from "vue-router";
+import { ref, watch, onMounted, onBeforeUnmount } from "vue";
+import { useRouter, useRoute } from "vue-router";
 export default {
   name: "musiclyric",
   setup() {
     const router = useRouter();
+    const route = useRoute();
     const albumPictureDom = ref(null);
 
     let songTitle = ref("");
@@ -65,15 +66,23 @@ export default {
       });
       getPageInfo();
     });
-
-    onBeforeRouteUpdate(() => {
-      getPageInfo();
-    });
+    onBeforeUnmount(() => {
+      Bus.$off();
+    })
+    
+    watch(
+      () => route.fullPath,
+      () => {
+        getPageInfo();
+      }
+    );
 
     const getPageInfo = () => {
       const songId = router.currentRoute.value.query.id;
-      getSongDetail(songId);
-      getLyric(songId);
+      if (songId) {
+        getSongDetail(songId);
+        getLyric(songId);
+      }
     };
     const getSongDetail = (songId) => {
       httpService.getSongDetail(songId).then(
@@ -94,7 +103,7 @@ export default {
             lyric.value = dealLyric(originLyric);
             instrumental.value = false;
           } else {
-            lyric = [{ time: 0, lyric: "纯音乐，请欣赏" }];
+            lyric.value = [{ time: 0, lyric: "纯音乐，请欣赏" }];
             instrumental.value = true;
             // 切歌重置唱片角度，但不知道为何必须延时，而且时间短了还有可能失败
             albumPictureDom.value.classList.remove("album-picture-animation");
