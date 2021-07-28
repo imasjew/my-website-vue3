@@ -26,7 +26,7 @@
         <img
           :src="albumPicture"
           alt=""
-          ref="albumPicture"
+          ref="albumPictureDom"
           class="album-picture album-picture-animation"
         />
       </div>
@@ -40,71 +40,66 @@
 <script>
 import httpService from "@/service/http.service";
 import Bus from "@/bus";
+import { ref, onMounted } from "vue";
+import { useRouter, onBeforeRouteUpdate } from "vue-router";
 export default {
   name: "musiclyric",
-  data() {
-    return {
-      songTitle: "",
-      lyric: [], // 歌词
-      albumPicture: "", // 专辑封面
-      instrumental: false, // 器乐曲目标识，分辨显示歌词还是专辑封面
-      currentSentenceIndex: null, // 当前高亮歌词index
+  setup() {
+    const router = useRouter();
+    const albumPictureDom = ref(null);
+
+    let songTitle = ref("");
+    let lyric = ref([]);
+    let albumPicture = ref("");
+    let instrumental = ref(false);
+    let currentSentenceIndex = ref(null);
+
+    onMounted(() => {
+      Bus.$on("checkLyricProcess", (process) => {
+        checkLyricProcess(process);
+      });
+      Bus.$on("setPlayState", (state) => {
+        setTimeout(() => {
+          setPlayState(state);
+        }, 200);
+      });
+      getPageInfo();
+    });
+
+    onBeforeRouteUpdate(() => {
+      getPageInfo();
+    });
+
+    const getPageInfo = () => {
+      const songId = router.currentRoute.value.query.id;
+      getSongDetail(songId);
+      getLyric(songId);
     };
-  },
-  created() {
-    Bus.$on("checkLyricProcess", (process) => {
-      this.checkLyricProcess(process);
-    });
-    Bus.$on("setPlayState", (state) => {
-      setTimeout(() => {
-        this.setPlayState(state);
-      }, 200);
-    });
-  },
-  mounted() {
-    this.getPageInfo();
-  },
-  watch: {
-    $route() {
-      this.getPageInfo();
-    },
-  },
-  computed: {
-    albumPictureDom() {
-      return this.$refs.albumPicture;
-    },
-  },
-  methods: {
-    getPageInfo() {
-      const songId = this.$route.query.id;
-      this.getSongDetail(songId);
-      this.getLyric(songId);
-    },
-    getSongDetail(songId) {
+    const getSongDetail = (songId) => {
       httpService.getSongDetail(songId).then(
         (res) => {
-          this.songTitle = res.songs[0].name;
-          this.albumPicture = res.songs[0].al.picUrl;
+          songTitle.value = res.songs[0].name;
+          albumPicture.value = res.songs[0].al.picUrl;
         },
         () => {
           console.log("歌曲信息加载失败");
         }
       );
-    },
-    getLyric(songId) {
+    };
+    const getLyric = (songId) => {
       httpService.getLyric(songId).then(
         (res) => {
           if (res.lrc) {
             const originLyric = res.lrc.lyric;
-            this.lyric = this.dealLyric(originLyric);
-            this.instrumental = false;
+            lyric.value = dealLyric(originLyric);
+            instrumental.value = false;
           } else {
-            this.lyric = [{ time: 0, lyric: "纯音乐，请欣赏" }];
-            this.instrumental = true;
+            lyric = [{ time: 0, lyric: "纯音乐，请欣赏" }];
+            instrumental.value = true;
             // 切歌重置唱片角度，但不知道为何必须延时，而且时间短了还有可能失败
-            this.albumPictureDom.classList.remove("album-picture-animation");
+            albumPictureDom.value.classList.remove("album-picture-animation");
             setTimeout(() => {
-              this.albumPictureDom.classList.add("album-picture-animation");
+              albumPictureDom.value.classList.add("album-picture-animation");
             }, 100);
           }
         },
@@ -112,8 +107,8 @@ export default {
           console.log("请求失败", err);
         }
       );
-    },
-    dealLyric(originLyric) {
+    };
+    const dealLyric = (originLyric) => {
       // 歌词分句
       let lyricArray = originLyric.split("\n");
       lyricArray.pop();
@@ -131,48 +126,66 @@ export default {
           }
         }
         dealedLyricArray.push({
-          time: this.lyricTimeFormat(lyricArray[i][0]),
+          time: lyricTimeFormat(lyricArray[i][0]),
           lyric: lyricArray[i][1],
         });
       }
       return dealedLyricArray;
-    },
-    lyricTimeFormat(originTime) {
+    };
+    const lyricTimeFormat = (originTime) => {
       const splitedTime = originTime.split(/[:]/);
       const dealedTime = parseFloat(
         splitedTime[0] * 60 + parseFloat(splitedTime[1])
       );
       return dealedTime;
-    },
-    checkLyricProcess(process) {
-      const maxLength = this.lyric.length;
+    };
+    const checkLyricProcess = (process) => {
+      if (!lyric.value) {
+        return;
+      }
+      const maxLength = lyric.value.length;
       if (maxLength <= 1) {
         return;
       }
-      if (process >= this.lyric[maxLength - 1].time) {
-        this.currentSentenceIndex = maxLength - 1;
+      if (process >= lyric.value[maxLength - 1].time) {
+        currentSentenceIndex.value = maxLength - 1;
         return;
       }
       for (let i = 0; i <= maxLength - 1; i++) {
-        if (process > this.lyric[i].time && process < this.lyric[i + 1].time) {
-          this.currentSentenceIndex = i;
+        if (
+          process > lyric.value[i].time &&
+          process < lyric.value[i + 1].time
+        ) {
+          currentSentenceIndex.value = i;
           return;
         }
       }
-    },
-    skipByLyric(time) {
+    };
+    const skipByLyric = (time) => {
       Bus.$emit("skipByLyric", time);
-    },
-    setPlayState(state) {
+    };
+    const setPlayState = (state) => {
       if (state) {
-        this.albumPictureDom.style.animationPlayState = "running";
+        albumPictureDom.value.style.animationPlayState = "running";
       } else {
-        this.albumPictureDom.style.animationPlayState = "paused";
+        albumPictureDom.value.style.animationPlayState = "paused";
       }
-    },
-    goToMusicList() {
-      Bus.$emit("goToMusicList", this.songTitle);
-    }
+    };
+    const goToMusicList = () => {
+      Bus.$emit("goToMusicList", songTitle.value);
+    };
+
+    return {
+      songTitle,
+      lyric,
+      albumPicture,
+      instrumental,
+      currentSentenceIndex,
+      albumPictureDom,
+      skipByLyric,
+      goToMusicList,
+      router,
+    };
   },
 };
 </script>
@@ -256,7 +269,6 @@ export default {
       color: #303133;
       text-shadow: 0 0 4px gray;
     }
-
   }
 }
 

@@ -12,12 +12,8 @@ import { ElNotification } from 'element-plus'
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router'
 
-// import {ref, reactive, toRaw } from 'vue'
 export default {
   name: "dashboard",
-  // created() {
-  //   this.checkAuth();
-  // },
   setup() {
     onMounted(() => {
       checkAuth()
@@ -29,7 +25,6 @@ export default {
           showSuccess(res.message);
         },
         (err) => {
-          console.log('err', err)
           showReject(err.data.message);
           router.push("/errorpage");
           accountService.logout();
