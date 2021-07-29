@@ -40,7 +40,7 @@
 <script>
 import httpService from "@/service/http.service";
 import Bus from "@/bus";
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, onMounted, onUnmounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 export default {
   name: "musiclyric",
@@ -60,14 +60,20 @@ export default {
         checkLyricProcess(process);
       });
       Bus.on("setPlayState", (state) => {
-        console.log('不应该啊')
         setTimeout(() => {
           setPlayState(state);
-        }, 200);
+        }, 100);
       });
       getPageInfo();
     });
-
+    onUnmounted(() => {
+      // off没有起作用，找了文档没解决，总之应该是这么写才对
+      // 这个bug引起了179行的报错
+      // 反复从歌词页退回列表再进入，还会重复订阅多次
+      // 不过先屏蔽报错暂时没有引发其他明显bug
+      Bus.off("checkLyricProcess")
+      Bus.off("setPlayState")
+    })
     watch(
       () => route.fullPath,
       () => {
@@ -172,6 +178,10 @@ export default {
       Bus.emit("skipByLyric", time);
     };
     const setPlayState = (state) => {
+      // 70行Bus.off无法生效，导致渲染页面前就调用Bus.on拿不到dom报错，先避免报错凑合用
+      if(!albumPictureDom.value) {
+        return
+      }
       if (state) {
         albumPictureDom.value.style.animationPlayState = "running";
       } else {
