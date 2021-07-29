@@ -28,21 +28,23 @@
 export default {
   name: "playlist",
   props: ["songList", "currentIndex"],
-  data() {
-    return {
-      isPlaying: false,
+  emits: ["remove", "play"],
+  setup(props, { emit }) {
+
+    const remove = (index) => {
+      emit("remove", index);
     };
-  },
-  methods: {
-    remove(index) {
-      this.$emit("remove", index);
-    },
-    playSong(e, index) {
+    const playSong = (e, index) => {
       if (e.srcElement.className === "el-icon-delete") {
         return;
       }
-      this.$emit("play", index);
-    },
+      emit("play", index);
+    };
+
+    return {
+      remove,
+      playSong,
+    };
   },
 };
 </script>

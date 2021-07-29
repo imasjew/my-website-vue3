@@ -73,40 +73,47 @@
 <script>
 import httpService from "@/service/http.service";
 import Bus from "@/bus";
+import { ref } from "@vue/reactivity";
+import { onMounted } from "@vue/runtime-core";
+import { useRoute, useRouter } from "vue-router";
+import { ElNotification } from "element-plus";
 export default {
   name: "musiclist",
-  data() {
-    return {
-      input: "",
-      currentIndex: null,
-      tableData: [],
-    };
-  },
-  created() {
-    if (this.$route.query.name) {
-      this.input = this.$route.query.name;
-      this.searchList();
-    }
-  },
-  methods: {
-    searchList() {
-      if (this.input === "") {
+
+  setup() {
+    const input = ref("");
+    const currentIndex = ref(null);
+    const tableData = ref([]);
+    const route = useRoute();
+    const router = useRouter();
+
+    onMounted(() => {
+      if (route.query.name) {
+        input.value = route.query.name;
+        searchList();
+      }
+    });
+
+    const searchList = () => {
+      if (input.value === "") {
         return;
       }
-      this.$router.push("?name=" + this.input);
-      httpService.getSongList(this.input).then(
+      router.push("?name=" + input.value);
+      httpService.getSongList(input.value).then(
         (res) => {
           const songs = res.result.songs;
-          this.formatSongList(songs);
+          if (songs) {
+            formatSongList(songs);
+          }
         },
         (err) => {
           console.log("songList请求失败", err);
         }
       );
-    },
-    formatSongList(songs) {
+    };
+    const formatSongList = (songs) => {
       const length = songs.length > 24 ? 24 : songs.length;
-      this.tableData = [];
+      tableData.value = [];
       for (let i = 0; i < length; i++) {
         let song = {};
         song.id = songs[i].id;
@@ -114,28 +121,36 @@ export default {
         song.duration = songs[i].duration / 1000;
         song.author = songs[i].artists[0].name;
         song.albumName = songs[i].album.name;
-        this.tableData.push(song);
+        tableData.value.push(song);
       }
-    },
-    addSong(index, songId, goToLyric) {
+    };
+    const addSong = (index, songId, goToLyric) => {
       httpService.checkSong(songId).then(
         () => {
-          this.currentIndex = index;
+          currentIndex.value = index;
           Bus.emit("addSongDetail", songId);
           if (goToLyric) {
             Bus.emit("goToLyric", songId);
           }
         },
         (err) => {
-          this.showAlert(err.response.data.message);
+          showAlert(err.data.message);
         }
       );
-    },
-    showAlert(msg) {
-      this.$message({
+    };
+    const showAlert = (msg) => {
+      ElNotification({
         message: msg,
       });
-    },
+    };
+
+    return {
+      input,
+      currentIndex,
+      tableData,
+      searchList,
+      addSong,
+    };
   },
 };
 </script>
