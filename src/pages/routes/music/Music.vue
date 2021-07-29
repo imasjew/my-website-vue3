@@ -34,17 +34,17 @@ export default {
   },
   unmounted() {
     document.body.removeEventListener("popstate", this.setBusListener, false);
-    Bus.$off();
+    Bus.all.clear()
   },
   methods: {
     setBusListener() {
-      Bus.$on("addSongDetail", (songId) => {
+      Bus.on("addSongDetail", (songId) => {
         this.addSongDetail(songId);
       });
-      Bus.$on("goToLyric", (songId) => {
+      Bus.on("goToLyric", (songId) => {
         this.goToLyric(songId);
       });
-      Bus.$on("goToMusicList", (songTitle) => {
+      Bus.on("goToMusicList", (songTitle) => {
         this.goToMusicList(songTitle);
       });
     },
@@ -52,7 +52,7 @@ export default {
       httpService.getFullSongDetail(songId).then(
         (res) => {
           const songDetail = this.formatSongDetail(res);
-          Bus.$emit("playerAddSong", songDetail);
+          Bus.emit("playerAddSong", songDetail);
         },
         (err) => {
           console.log("getSongDetail获取失败", err);

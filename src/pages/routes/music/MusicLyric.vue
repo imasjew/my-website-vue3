@@ -40,7 +40,7 @@
 <script>
 import httpService from "@/service/http.service";
 import Bus from "@/bus";
-import { ref, watch, onMounted, onBeforeUnmount } from "vue";
+import { ref, watch, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 export default {
   name: "musiclyric",
@@ -56,20 +56,18 @@ export default {
     let currentSentenceIndex = ref(null);
 
     onMounted(() => {
-      Bus.$on("checkLyricProcess", (process) => {
+      Bus.on("checkLyricProcess", (process) => {
         checkLyricProcess(process);
       });
-      Bus.$on("setPlayState", (state) => {
+      Bus.on("setPlayState", (state) => {
+        console.log('不应该啊')
         setTimeout(() => {
           setPlayState(state);
         }, 200);
       });
       getPageInfo();
     });
-    onBeforeUnmount(() => {
-      Bus.$off();
-    })
-    
+
     watch(
       () => route.fullPath,
       () => {
@@ -171,7 +169,7 @@ export default {
       }
     };
     const skipByLyric = (time) => {
-      Bus.$emit("skipByLyric", time);
+      Bus.emit("skipByLyric", time);
     };
     const setPlayState = (state) => {
       if (state) {
@@ -181,7 +179,7 @@ export default {
       }
     };
     const goToMusicList = () => {
-      Bus.$emit("goToMusicList", songTitle.value);
+      Bus.emit("goToMusicList", songTitle.value);
     };
 
     return {

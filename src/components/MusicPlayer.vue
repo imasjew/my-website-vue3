@@ -135,16 +135,16 @@ export default {
     this.getStorageSettings();
   },
   created() {
-    Bus.$on("playerAddSong", (song) => {
+    Bus.on("playerAddSong", (song) => {
       this.addSong(song);
     });
-    Bus.$on("skipByLyric", (process) => {
+    Bus.on("skipByLyric", (process) => {
       this.setProcessByLyric(process);
     });
   },
   unmounted() {
     clearInterval(this.processChecker);
-    Bus.$off();
+    Bus.off();
   },
   computed: {
     title() {
@@ -218,10 +218,10 @@ export default {
       if (this.songReady && this.isPlaying) {
         setTimeout(() => {
           this.audio.play();
-          Bus.$emit("setPlayState", true);
+          Bus.emit("setPlayState", true);
         }, 10);
       } else {
-        Bus.$emit("setPlayState", false);
+        Bus.emit("setPlayState", false);
       }
     },
   },
@@ -260,7 +260,7 @@ export default {
         return;
       }
       const songId = this.songList[this.currentIndex].id;
-      Bus.$emit("addSongDetail", songId);
+      Bus.emit("addSongDetail", songId);
     },
     addSong(song) {
       if (this.songList.length !== 0) {
@@ -300,7 +300,7 @@ export default {
         this.checkCurrentProcess();
       }, 200);
       if (this.$route.name === "musiclyric") {
-        Bus.$emit("goToLyric", this.songList[this.currentIndex].id);
+        Bus.emit("goToLyric", this.songList[this.currentIndex].id);
       }
     },
     pauseSong() {
@@ -311,7 +311,7 @@ export default {
     checkCurrentProcess() {
       this.duration = this.audio.duration;
       this.currentTime = this.audio.currentTime;
-      Bus.$emit("checkLyricProcess", this.currentTime);
+      Bus.emit("checkLyricProcess", this.currentTime);
     },
     switchSong(type) {
       if (type === 1) {
@@ -422,10 +422,10 @@ export default {
       );
     },
     goToLyric() {
-      Bus.$emit("goToLyric", this.songList[this.currentIndex].id);
+      Bus.emit("goToLyric", this.songList[this.currentIndex].id);
       setTimeout(() => {
         if (this.isPlaying) {
-          Bus.$emit("setPlayState", true);
+          Bus.emit("setPlayState", true);
         }
       }, 10);
     },

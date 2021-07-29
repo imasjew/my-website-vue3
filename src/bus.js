@@ -1,2 +1,5 @@
-import Bus from "@/eventBus";
-export default new Bus();
+import mitt from 'mitt'
+
+const bus = mitt()
+
+export default bus

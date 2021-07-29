@@ -121,9 +121,9 @@ export default {
       httpService.checkSong(songId).then(
         () => {
           this.currentIndex = index;
-          Bus.$emit("addSongDetail", songId);
+          Bus.emit("addSongDetail", songId);
           if (goToLyric) {
-            Bus.$emit("goToLyric", songId);
+            Bus.emit("goToLyric", songId);
           }
         },
         (err) => {
