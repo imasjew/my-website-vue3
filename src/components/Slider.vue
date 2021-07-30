@@ -7,13 +7,14 @@
     <div class="bar-current" :style="barCurrentStyle"></div>
     <div
       class="bar-handle"
-      :class="['bar-handle',!isReady?'handle-loading':'']"
+      :class="['bar-handle', !isReady ? 'handle-loading' : '']"
       :style="barHandleStyle"
       @mousedown="dragPosition($event)"
     ></div>
   </div>
 </template>
 <script>
+import { computed } from "@vue/runtime-core";
 export default {
   name: "Slider",
   props: [
@@ -22,104 +23,124 @@ export default {
     "barWeight",
     "currentPosition",
     "forbidden",
-    "isReady"
+    "isReady",
   ],
-  computed: {
-    barContainerSize() {
-      if (this.verticalMode) {
+  emits: [
+    "setPosition",
+    "dragMouseDown",
+    "dragMouseMove",
+    "dragMouseUp"
+  ],
+  setup(props, {emit}) {
+    const barContainerSize = computed(() => {
+      if (props.verticalMode) {
         return {
-          'width': this.barWeight + "px",
-          'height': this.barLength + "px",
+          width: props.barWeight + "px",
+          height: props.barLength + "px",
         };
       } else {
         return {
-          'width': this.barLength + "px",
-          'height': this.barWeight + "px",
+          width: props.barLength + "px",
+          height: props.barWeight + "px",
         };
       }
-    },
-    barHandleStyle() {
+    });
+    const barHandleStyle = computed(() => {
       let position;
-      if (this.verticalMode) {
+      if (props.verticalMode) {
         position = {
-          'bottom': this.currentPosition + "%",
-          'left': -this.barWeight / 2 + "px",
-          "margin-bottom": -this.barWeight + "px",
+          'bottom': props.currentPosition + "%",
+          'left': -props.barWeight / 2 + "px",
+          "margin-bottom": -props.barWeight + "px",
         };
       } else {
         position = {
-          'left': this.currentPosition + "%",
-          'top': -this.barWeight / 2 + "px",
-          "margin-left": -this.barWeight + "px",
+          'left': props.currentPosition + "%",
+          'top': -props.barWeight / 2 + "px",
+          "margin-left": -props.barWeight + "px",
         };
       }
       return {
-        'width': this.barWeight + "px",
-        'height': this.barWeight + "px",
-        "border-radius": this.barWeight + "px",
-        'border': this.barWeight / 2 + "px solid white",
+        'width': props.barWeight + "px",
+        'height': props.barWeight + "px",
+        "border-radius": props.barWeight + "px",
+        'border': props.barWeight / 2 + "px solid white",
         ...position,
       };
-    },
-    barCurrentStyle() {
+    });
+    const barCurrentStyle = computed(() => {
       let style;
-      if (this.verticalMode) {
+      if (props.verticalMode) {
         style = {
-          'width': this.barWeight + 'px',
-          'height': this.currentPosition + '%',
-          'box-shadow': 'none'
-        }
+          width: props.barWeight + "px",
+          height: props.currentPosition + "%",
+          "box-shadow": "none",
+        };
       } else {
         style = {
-          'height': this.barWeight + 'px',
-          'width': this.currentPosition + '%'
-        }
+          height: props.barWeight + "px",
+          width: props.currentPosition + "%",
+        };
       }
       return {
-        'border-radius': this.barWeight / 2 + 'px',
-        ...style
+        "border-radius": props.barWeight / 2 + "px",
+        ...style,
       };
+    });
+    const clickPosition = (e) => {
+      if (props.forbidden === true) {
+        return;
+      }
+      const layerPosition = props.verticalMode
+        ? props.barLength - e.layerY
+        : e.layerX;
+      const barRate = layerPosition / props.barLength;
+      emit("setPosition", barRate);
+      
     }
-  },
-  methods: {
-    clickPosition(e) {
-      if (this.forbidden === true) {
-        return;
-      }
-      const layerPosition = this.verticalMode ? this.barLength - e.layerY : e.layerX;
-      const barRate = layerPosition / this.barLength;
-      this.$emit("setPosition", barRate);
-    },
-    dragPosition(e) {
+    const dragPosition = (e) => {
       e.stopPropagation(); // 避免触发process-handle的点击
-      if (this.forbidden === true) {
+      if (props.forbidden === true) {
         return;
       }
-      this.$emit("dragMouseDown");
-      const mousedownPosition = this.verticalMode ?  - e.clientY : e.clientX; // 鼠标初始绝对定位, 竖向为从下向上递增，所以取负减少后续重复判断
-      const offsetPosition = this.verticalMode ? - e.target.offsetTop : e.target.offsetLeft; // 滑块基础相对位置
+      emit("dragMouseDown");
+      const mousedownPosition = props.verticalMode ? -e.clientY : e.clientX; // 鼠标初始绝对定位, 竖向为从下向上递增，所以取负减少后续重复判断
+      const offsetPosition = props.verticalMode
+        ? -e.target.offsetTop
+        : e.target.offsetLeft; // 滑块基础相对位置
       // 修正了自身体积后的滑块位置, 竖向从下向上递增，所以需额外补偿一份容器全长否
-      const originHandlePosition = this.verticalMode ? offsetPosition - this.barWeight + this.barLength : offsetPosition + this.barWeight;
+      const originHandlePosition = props.verticalMode
+        ? offsetPosition - props.barWeight + props.barLength
+        : offsetPosition + props.barWeight;
       document.onmousemove = (e) => {
-        const newClientPosition = this.verticalMode ? - e.clientY : e.clientX; // 鼠标新定位
+        const newClientPosition = props.verticalMode ? -e.clientY : e.clientX; // 鼠标新定位
         let offset = newClientPosition - mousedownPosition; // 鼠标新老定位相减计算移动距离
         let position = originHandlePosition + offset; // 滑块获得同样的移动距离
         // 滑块移动边界限制
         if (position <= 0) {
           position = 0;
         }
-        if (position >= this.barLength) {
-          position = this.barLength;
+        if (position >= props.barLength) {
+          position = props.barLength;
         }
-        const barRate = position / this.barLength;
-        this.$emit("dragMouseMove", barRate);
+        const barRate = position / props.barLength;
+        emit("dragMouseMove", barRate);
       };
       document.onmouseup = () => {
         document.onmousemove = null;
         document.onmouseup = null;
-        this.$emit("dragMouseUp");
+        emit("dragMouseUp");
       };
-    },
+    }
+
+
+    return {
+      barContainerSize,
+      barHandleStyle,
+      barCurrentStyle,
+      clickPosition,
+      dragPosition
+    };
   },
 };
 </script>
