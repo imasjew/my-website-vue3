@@ -27,7 +27,7 @@
         </div>
         <div class="song-process-wrapper">
           <audio
-            ref="player"
+            ref="playerDom"
             :src="url"
             controls="controls"
             @canplay="audioLoaded()"
@@ -52,7 +52,8 @@
             ></Slider>
           </div>
           <div class="process-duration">
-            {{ $filters.formatDate(currentTime) }} / {{ $filters.formatDate(duration) }}
+            {{ $filters.formatDate(currentTime) }} /
+            {{ $filters.formatDate(duration) }}
           </div>
         </div>
       </div>
@@ -103,87 +104,119 @@
 import playlist from "@/components/PlayList.vue";
 import Slider from "@/components/Slider.vue";
 import Bus from "@/bus";
-import volumeOnIcon from "@/assets/icon/volume-on.png"
-import volumeOffIcon from "@/assets/icon/volume-off.png"
+import volumeOnIconPng from "@/assets/icon/volume-on.png";
+import volumeOffIconPng from "@/assets/icon/volume-off.png";
+import { computed, onMounted, ref, onUnmounted, watch } from "vue";
+import { useRoute } from "vue-router";
 
 export default {
   name: "musicplayer",
   components: { playlist, Slider },
-  data() {
-    return {
-      audio: "", // 音频资源
-      currentIndex: 0, // 当前播放编号
-      songList: [], // 歌单
-      songReady: false, // 歌曲加载状态
-      isPlaying: false, // 播放状态
-      loopMode: 0, // 列表循环模式
-      showList: false, // 列表显示开关
-      currentTime: 0, // 当前进度
-      duration: 0, // 歌曲总时长
-      processChecker: null, // 走条计时器
-      volumeOn: true, // 音量开关
-      showVolumeController: false, // 显示音量滑块
-      currentVolume: 70, // 当前音量
-      maxVolume: 100, // 最大音量
-      volumeOnIcon: volumeOnIcon, // 音量开图标
-      volumeOffIcon: volumeOffIcon, // 音量关图标
-    };
-  },
-  mounted() {
-    this.audio = this.$refs.player;
-    this.getStorageInfo();
-    this.getStorageSettings();
-  },
-  created() {
-    Bus.on("playerAddSong", (song) => {
-      this.addSong(song);
+
+  setup() {
+    const audio = ref(""); // 音频资源
+    const currentIndex = ref(0); // 当前播放编号
+    const songList = ref([]); // 歌单
+    const songReady = ref(false); // 歌曲加载状态
+    const isPlaying = ref(false); // 播放状态
+    const loopMode = ref(0); // 列表循环模式
+    const showList = ref(false); // 列表显示开关
+    const currentTime = ref(0); // 当前进度
+    const duration = ref(0); // 歌曲总时长
+    const processChecker = ref(null); // 走条计时器
+    const volumeOn = ref(true); // 音量开关
+    const showVolumeController = ref(false); // 显示音量滑块
+    const currentVolume = ref(70); // 当前音量
+    const maxVolume = ref(100); // 最大音量
+    const volumeOnIcon = ref(volumeOnIconPng); // 音量开图标
+    const volumeOffIcon = ref(volumeOffIconPng); // 音量关图标
+    const playerDom = ref(null);
+
+    const route = useRoute();
+
+    onMounted(() => {
+      Bus.on("playerAddSong", (song) => {
+        addSong(song);
+      });
+      Bus.on("skipByLyric", (process) => {
+        setProcessByLyric(process);
+      });
+      audio.value = playerDom.value;
+      getStorageInfo();
+      getStorageSettings();
     });
-    Bus.on("skipByLyric", (process) => {
-      this.setProcessByLyric(process);
+    onUnmounted(() => {
+      clearInterval(processChecker.value);
     });
-  },
-  unmounted() {
-    clearInterval(this.processChecker);
-    Bus.off();
-  },
-  computed: {
-    title() {
-      if (this.songList.length === 0) {
+
+    watch(
+      () => currentIndex.value,
+      (index) => localStorage.setItem("currentIndex", index)
+    );
+    watch(
+      () => currentVolume.value,
+      (volume) => {
+        const volumeRate = volume / maxVolume.value;
+        localStorage.setItem("volumeRate", volume / maxVolume.value);
+        audio.value.volume = volumeRate;
+      }
+    );
+    watch(
+      () => songList.value,
+      (list) => {
+        localStorage.setItem("playList", JSON.stringify(list));
+      },
+      { deep: true }
+    );
+    watch(
+      () => loopMode.value,
+      (mode) => localStorage.setItem("loopMode", mode)
+    );
+    watch(
+      () => [songReady.value, isPlaying.value],
+      ([readyState, playState]) => {
+        if (readyState && playState) {
+          setTimeout(() => {
+            audio.value.play();
+            Bus.emit("setPlayState", true);
+          }, 10);
+        } else {
+          Bus.emit("setPlayState", false);
+        }
+      }
+    );
+
+    const title = computed(() => {
+      if (songList.value.length === 0) {
         return "";
       }
-      return this.songList[this.currentIndex].title || "";
-    },
-    url() {
-      if (this.songList.length === 0) {
+      return songList.value[currentIndex.value].title || "";
+    });
+    const url = computed(() => {
+      if (songList.value.length === 0) {
         return "";
       }
-      return this.songList[this.currentIndex].url || "";
-    },
-    albumPicture() {
-      if (this.songList.length === 0) {
+      return songList.value[currentIndex.value].url || "";
+    });
+    const albumPicture = computed(() => {
+      if (songList.value.length === 0) {
         return "";
       }
-      return this.songList[this.currentIndex].albumPicture || "";
-    },
-    playState() {
-      const { songReady, isPlaying } = this;
-      return {
-        songReady,
-        isPlaying,
-      };
-    },
-    playButtonType() {
-      return this.isPlaying ? "el-icon-video-pause" : "el-icon-video-play";
-    },
-    processHandlePosition() {
-      if (this.duration === 0) {
+      return songList.value[currentIndex.value].albumPicture || "";
+    });
+
+    const playButtonType = computed(() => {
+      return isPlaying.value ? "el-icon-video-pause" : "el-icon-video-play";
+    });
+    const processHandlePosition = computed(() => {
+      if (duration.value === 0) {
         return 0;
       } else {
-        return (this.currentTime / this.duration) * 100;
+        return (currentTime.value / duration.value) * 100;
       }
-    },
-    loopModeIcon() {
-      switch (this.loopMode) {
+    });
+    const loopModeIcon = computed(() => {
+      switch (loopMode.value) {
         case 0:
           return "el-icon-refresh";
         case 1:
@@ -191,244 +224,255 @@ export default {
         default:
           return "el-icon-refresh";
       }
-    },
-    volumeHandlePosition() {
-      return (this.currentVolume / this.maxVolume) * 100;
-    },
-  },
-  watch: {
-    currentIndex(index) {
-      localStorage.setItem("currentIndex", index);
-    },
-    currentVolume(volume) {
-      const volumeRate = volume / this.maxVolume;
-      localStorage.setItem("volumeRate", volume / this.maxVolume);
-      this.audio.volume = volumeRate;
-    },
-    songList: {
-      handler(list) {
-        localStorage.setItem("playList", JSON.stringify(list));
-      },
-      deep: true,
-    },
-    loopMode(mode) {
-      localStorage.setItem("loopMode", mode);
-    },
-    playState() {
-      if (this.songReady && this.isPlaying) {
-        setTimeout(() => {
-          this.audio.play();
-          Bus.emit("setPlayState", true);
-        }, 10);
-      } else {
-        Bus.emit("setPlayState", false);
-      }
-    },
-  },
-  methods: {
-    getStorageInfo() {
+    });
+    const volumeHandlePosition = computed(() => {
+      return (currentVolume.value / maxVolume.value) * 100;
+    });
+
+    const getStorageInfo = () => {
       const storageList = localStorage.getItem("playList");
       if (storageList !== null) {
-        this.songList = JSON.parse(storageList);
-        this.currentIndex = Number(localStorage.getItem("currentIndex"));
+        songList.value = JSON.parse(storageList);
+        currentIndex.value = Number(localStorage.getItem("currentIndex"));
       } else {
         localStorage.setItem("currentIndex", 0);
       }
-    },
-    getStorageSettings() {
+    };
+    const getStorageSettings = () => {
       const storageVolumeRate = localStorage.getItem("volumeRate");
       if (storageVolumeRate) {
-        this.currentVolume = storageVolumeRate * this.maxVolume;
+        currentVolume.value = storageVolumeRate * maxVolume.value;
       } else {
-        localStorage.setItem("volumeRate", this.currentVolume / this.maxVolume);
+        localStorage.setItem(
+          "volumeRate",
+          currentVolume.value / maxVolume.value
+        );
       }
       const storageLoopMode = Number(localStorage.getItem("loopMode"));
       if (storageLoopMode) {
-        this.loopMode = storageLoopMode;
+        loopMode.value = storageLoopMode;
       } else {
-        localStorage.setItem("loopMode", this.loopMode);
+        localStorage.setItem("loopMode", loopMode.value);
       }
-    },
-    audioLoaded() {
-      this.songReady = true;
-      this.checkCurrentProcess();
-    },
-    getReloadSong() {
-      this.songReady = false;
+    };
+    const audioLoaded = () => {
+      songReady.value = true;
+      checkCurrentProcess();
+    };
+    const getReloadSong = () => {
+      songReady.value = false;
       // 歌单为空时触发，强行获取id会报错
-      if (this.songList.length === 0) {
+      if (songList.value.length === 0) {
         return;
       }
-      const songId = this.songList[this.currentIndex].id;
+      const songId = songList.value[currentIndex.value].id;
       Bus.emit("addSongDetail", songId);
-    },
-    addSong(song) {
-      if (this.songList.length !== 0) {
-        this.checkDuplicate(song);
+    };
+    const addSong = (song) => {
+      if (songList.value.length !== 0) {
+        checkDuplicate(song);
       } else {
-        this.songList.push(song);
-        this.currentIndex = this.songList.length - 1;
+        songList.value.push(song);
+        currentIndex.value = songList.value.length - 1;
       }
-      this.playSong();
-    },
-    checkDuplicate(song) {
-      const listLength = this.songList.length;
+      playSong();
+    };
+    const checkDuplicate = (song) => {
+      const listLength = songList.value.length;
       for (let i = 0; i <= listLength; i++) {
-        if (song.id === this.songList[i].id) {
-          // 原本使用$set的部分，现已废弃需要学习vue3新的监听方式
-          // 但是目前似乎不用￥set也能监听到???
-          this.songList[i] = song;
-          this.currentIndex = i;
+        if (song.id === songList.value[i].id) {
+          songList.value[i] = song;
+          currentIndex.value = i;
           i = listLength;
           return;
         }
         if (i === listLength - 1) {
-          this.songList.push(song);
-          this.currentIndex = this.songList.length - 1;
+          songList.value.push(song);
+          currentIndex.value = songList.value.length - 1;
           return;
         }
       }
-    },
-    playSong() {
-      this.isPlaying = false;
-      if (this.songList.length === 0) {
+    };
+    const playSong = () => {
+      isPlaying.value = false;
+      if (songList.value.length === 0) {
         return;
       }
-      clearInterval(this.processChecker);
-      this.isPlaying = true;
-      this.processChecker = setInterval(() => {
-        this.checkCurrentProcess();
+      clearInterval(processChecker.value);
+      isPlaying.value = true;
+      processChecker.value = setInterval(() => {
+        checkCurrentProcess();
       }, 200);
-      if (this.$route.name === "musiclyric") {
-        Bus.emit("goToLyric", this.songList[this.currentIndex].id);
+      if (route.name === "musiclyric") {
+        Bus.emit("goToLyric", songList.value[currentIndex.value].id);
       }
-    },
-    pauseSong() {
-      this.isPlaying = false;
-      this.audio.pause();
-      clearInterval(this.processChecker);
-    },
-    checkCurrentProcess() {
-      this.duration = this.audio.duration;
-      this.currentTime = this.audio.currentTime;
-      Bus.emit("checkLyricProcess", this.currentTime);
-    },
-    switchSong(type) {
+    };
+    const pauseSong = () => {
+      isPlaying.value = false;
+      audio.value.pause();
+      clearInterval(processChecker.value);
+    };
+    const checkCurrentProcess = () => {
+      duration.value = audio.value.duration;
+      currentTime.value = audio.value.currentTime;
+      Bus.emit("checkLyricProcess", currentTime.value);
+    };
+    const switchSong = (type) => {
       if (type === 1) {
-        if (this.currentIndex === 0) {
-          this.currentIndex = this.songList.length - 1;
+        if (currentIndex.value === 0) {
+          currentIndex.value = songList.value.length - 1;
         } else {
-          this.currentIndex--;
+          currentIndex.value--;
         }
       }
       if (type === 2) {
-        if (this.currentIndex === this.songList.length - 1) {
-          this.currentIndex = 0;
+        if (currentIndex.value === songList.value.length - 1) {
+          currentIndex.value = 0;
         } else {
-          this.currentIndex++;
+          currentIndex.value++;
         }
       }
-      if (this.isPlaying) {
-        this.playSong();
+      if (isPlaying.value) {
+        playSong();
       } else {
-        this.currentTime = 0;
+        currentTime.value = 0;
       }
-    },
-    switchLoopMode() {
-      if (this.loopMode < 1) {
-        this.loopMode++;
+    };
+    const switchLoopMode = () => {
+      const modeCount = 2; // 现有2种播放顺序
+      if (loopMode.value < modeCount - 1) {
+        loopMode.value++;
       } else {
-        this.loopMode = 0;
+        loopMode.value = 0;
       }
-    },
-    songLoop() {
-      if (this.loopMode === 0) {
-        this.switchSong(2);
+    };
+    const songLoop = () => {
+      if (loopMode.value === 0) {
+        switchSong(2);
       } else {
-        this.playSong();
+        playSong();
       }
-    },
-    toggleList() {
-      this.showList = !this.showList;
-    },
-    removeListSong(index) {
-      if (this.currentIndex === index) {
+    };
+    const toggleList = () => {
+      showList.value = !showList.value;
+    };
+    const removeListSong = (index) => {
+      if (currentIndex.value === index) {
         return;
       }
-      if (this.currentIndex > index) {
-        this.currentIndex--;
+      if (currentIndex.value > index) {
+        currentIndex.value--;
       }
-      this.songList.splice(index, 1);
-    },
-    playListSong(index) {
-      this.currentIndex = index;
-      this.playSong();
-    },
+      songList.value.splice(index, 1);
+    };
+    const playListSong = (index) => {
+      currentIndex.value = index;
+      playSong();
+    };
 
     // 进度条控制组件
-    setProcess(barRate) {
-      this.currentTime = this.duration * barRate;
-      this.audio.currentTime = this.currentTime;
-    },
-    dragProcessMouseDown() {
-      clearInterval(this.processChecker);
-    },
-    dragProcessMouseMove(barRate) {
-      this.currentTime = barRate * this.duration;
-    },
-    dragProcessMouseUp() {
-      this.audio.currentTime = this.currentTime;
-      // 有空研究下为啥设了延时才能走，是否和媒体加载有关？
-      this.processChecker = setInterval(() => {
-        this.checkCurrentProcess();
+    const setProcess = (barRate) => {
+      currentTime.value = duration.value * barRate;
+      audio.value.currentTime = currentTime.value;
+    };
+    const dragProcessMouseDown = () => {
+      clearInterval(processChecker.value);
+    };
+    const dragProcessMouseMove = (barRate) => {
+      currentTime.value = barRate * duration.value;
+    };
+    const dragProcessMouseUp = () => {
+      audio.value.currentTime = currentTime.value;
+      processChecker.value = setInterval(() => {
+        checkCurrentProcess();
       }, 200);
-    },
+    };
     // 点击歌词跳转进度
-    setProcessByLyric(process) {
-      if (this.isPlaying) {
-        this.audio.currentTime = process;
+    const setProcessByLyric = (process) => {
+      if (isPlaying.value) {
+        audio.value.currentTime = process;
       }
-    },
+    };
     // 音量控制组件
-    setVolume(barRate) {
-      this.currentVolume = this.maxVolume * barRate;
-      this.volumeOn = barRate !== 0;
-    },
-    dragVolumeMouseMove(barRate) {
-      this.setVolume(barRate);
-    },
+    const setVolume = (barRate) => {
+      currentVolume.value = maxVolume.value * barRate;
+      volumeOn.value = barRate !== 0;
+    };
+    const dragVolumeMouseMove = (barRate) => {
+      setVolume(barRate);
+    };
     //
-
-    toggleVolumeController(e) {
+    const toggleVolumeController = (e) => {
       // 避免点击控制条时触发
       if (e.srcElement.className !== "volume-icon") {
         return;
       }
-      this.showVolumeController = !this.showVolumeController;
-      if (this.showVolumeController) {
-        document.body.addEventListener(
-          "click",
-          this.removeVolumeController,
-          false
-        );
+      showVolumeController.value = !showVolumeController.value;
+      if (showVolumeController.value) {
+        document.body.addEventListener("click", removeVolumeController, false);
       }
-    },
-    removeVolumeController() {
-      this.showVolumeController = false;
-      document.body.removeEventListener(
-        "click",
-        this.removeVolumeController,
-        false
-      );
-    },
-    goToLyric() {
-      Bus.emit("goToLyric", this.songList[this.currentIndex].id);
+    };
+    const removeVolumeController = () => {
+      showVolumeController.value = false;
+      document.body.removeEventListener("click", removeVolumeController, false);
+    };
+    const goToLyric = () => {
+      Bus.emit("goToLyric", songList.value[currentIndex.value].id);
       setTimeout(() => {
-        if (this.isPlaying) {
+        if (isPlaying.value) {
           Bus.emit("setPlayState", true);
         }
       }, 10);
-    },
+    };
+
+    return {
+      audio,
+      currentIndex,
+      songList,
+      songReady,
+      isPlaying,
+      loopMode,
+      showList,
+      currentTime,
+      duration,
+      processChecker,
+      volumeOn,
+      showVolumeController,
+      currentVolume,
+      maxVolume,
+      volumeOnIcon,
+      volumeOffIcon,
+      playerDom,
+
+      title,
+      url,
+      albumPicture,
+      playButtonType,
+      processHandlePosition,
+      loopModeIcon,
+      volumeHandlePosition,
+
+      audioLoaded,
+      getReloadSong,
+      addSong,
+      playSong,
+      pauseSong,
+      switchSong,
+      switchLoopMode,
+      songLoop,
+      toggleList,
+      removeListSong,
+      playListSong,
+      setProcess,
+      dragProcessMouseDown,
+      dragProcessMouseMove,
+      dragProcessMouseUp,
+      setProcessByLyric,
+      setVolume,
+      dragVolumeMouseMove,
+      toggleVolumeController,
+      goToLyric,
+    };
   },
 };
 </script>
