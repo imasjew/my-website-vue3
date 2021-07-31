@@ -570,7 +570,12 @@ export default {
       color: #e8e8e8;
       text-align: left;
       .song-title {
+        width: 580px;
+        display: inline-block;
         cursor: pointer !important;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
     }
     .song-process-wrapper {
