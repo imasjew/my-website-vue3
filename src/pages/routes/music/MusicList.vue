@@ -5,7 +5,7 @@
         placeholder="请输入内容"
         v-model="input"
         clearable
-        @keydown.enter="$emit(searchList())"
+        @keydown.enter="searchList()"
       >
         <template #append>
           <el-button icon="el-icon-search" @click="searchList()"></el-button>
@@ -79,7 +79,6 @@ import { useRoute, useRouter } from "vue-router";
 import { ElNotification } from "element-plus";
 export default {
   name: "musiclist",
-
   setup() {
     const input = ref("");
     const currentIndex = ref(null);
