@@ -149,27 +149,21 @@ export default {
       clearInterval(processChecker.value);
     });
 
-    watch(
-      () => currentIndex.value,
+    watch(currentIndex,
       (index) => localStorage.setItem("currentIndex", index)
     );
-    watch(
-      () => currentVolume.value,
-      (volume) => {
-        const volumeRate = volume / maxVolume.value;
-        localStorage.setItem("volumeRate", volume / maxVolume.value);
-        audio.value.volume = volumeRate;
-      }
-    );
-    watch(
-      () => songList.value,
+    watch(currentVolume, (volume) => {
+      const volumeRate = volume / maxVolume.value;
+      localStorage.setItem("volumeRate", volume / maxVolume.value);
+      audio.value.volume = volumeRate;
+    });
+    watch(songList,
       (list) => {
         localStorage.setItem("playList", JSON.stringify(list));
       },
       { deep: true }
     );
-    watch(
-      () => loopMode.value,
+    watch(loopMode,
       (mode) => localStorage.setItem("loopMode", mode)
     );
     watch(
