@@ -13,6 +13,7 @@ import httpService from "@/service/http.service";
 import musicplayer from "@/components/MusicPlayer.vue";
 import Bus from "@/bus";
 import { useRouter } from 'vue-router';
+import { formatSongDetail } from '@/utils/musicUtils.ts'
 
 export default {
   name: "music",
@@ -59,20 +60,7 @@ export default {
         }
       );
     }
-    const formatSongDetail = (originInfo) => {
-      const songBasicInfo = originInfo[0].songs[0];
-      const songUrl = originInfo[1].data[0].url;
-      const song = {
-        title: songBasicInfo.name,
-        duration: songBasicInfo.dt / 1000,
-        author: songBasicInfo.ar[0].name,
-        albumName: songBasicInfo.al.name,
-        id: songBasicInfo.id,
-        albumPicture: songBasicInfo.al.picUrl,
-        url: songUrl,
-      };
-      return song;
-    }
+
     const goToLyric = (songId) => {
       router.push({
         path: "/home/music/musiclyric",
@@ -88,7 +76,6 @@ export default {
 
     return {
       showController,
-
     };
   },
 
