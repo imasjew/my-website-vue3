@@ -1,17 +1,19 @@
 <template>
-  <div id="app" style="background-color: gray">
+  <div id="app" >
     <router-view/>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'App'
-}
+<script lang="ts">
+import { defineComponent } from 'vue';
+
+export default defineComponent({
+  name: 'App',
+
+});
 </script>
 
-<style>
-/* 同时设置html和body才能让页面高度为100% */
+<style lang="less">
 html,body {
   margin: 0;
   width: 100%;
@@ -24,5 +26,6 @@ html,body {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: black;
+  background-color: gray
 }
 </style>

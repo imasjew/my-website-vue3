@@ -1,18 +1,9 @@
-// import { SongList } from '../service/interface'
-// interface SongDetail {
-// 	title?: string;
-// 	duration?: number;
-// 	author?: string;
-// 	albumName?: string;
-// 	id?: number;
-// 	albumPicture?: string;
-// 	url?: string;
-// }
+import { SongDetail } from '../service/interface'
 
-export const formatSongDetail = (originInfo) => {
+export const formatSongDetail = (originInfo: any) => {
 	const songBasicInfo = originInfo[0].songs[0];
 	const songUrl = originInfo[1].data[0].url;
-	const song = {
+	const song: SongDetail = {
 		title: songBasicInfo.name,
 		duration: songBasicInfo.dt / 1000,
 		author: songBasicInfo.ar[0].name,
@@ -24,12 +15,12 @@ export const formatSongDetail = (originInfo) => {
 	return song;
 }
 
-export const formatSongList = (songs) => {
+export const formatSongList = (songs: any) => {
 	// 暂时不做翻页，只用前24首
 	const length = songs.length > 24 ? 24 : songs.length;
 	const songList = []
 	for (let i = 0; i < length; i++) {
-		let song;
+		const song: SongDetail = {};
 		song.id = songs[i].id;
 		song.title = songs[i].name;
 		song.duration = songs[i].duration / 1000;

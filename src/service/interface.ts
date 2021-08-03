@@ -1,4 +1,4 @@
-export interface SongList {
+export interface SongDetail {
 	title?: string;
 	duration?: number;
 	author?: string;
