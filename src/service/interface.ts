@@ -6,4 +6,10 @@ export interface SongDetail {
 	id?: number;
 	albumPicture?: string;
 	url?: string;
+};
+export interface StorageInfo {
+	songList?: object;
+	currentIndex?: number;
+	currentVolume?: number;
+	loopMode?: number;
 }

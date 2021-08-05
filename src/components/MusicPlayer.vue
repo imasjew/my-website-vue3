@@ -103,6 +103,7 @@
 <script>
 import playlist from "@/components/PlayList.vue";
 import Slider from "@/components/Slider.vue";
+import { getStorageInfo } from "@/utils/musicUtils";
 import Bus from "@/bus";
 import volumeOnIconPng from "@/assets/icon/volume-on.png";
 import volumeOffIconPng from "@/assets/icon/volume-off.png";
@@ -142,30 +143,23 @@ export default {
         setProcessByLyric(process);
       });
       audio.value = playerDom.value;
-      getStorageInfo();
-      getStorageSettings();
+      const storageInfo = getStorageInfo();
+      setStorageInfo(storageInfo);
     });
-    onUnmounted(() => {
-      clearInterval(processChecker.value);
-    });
+    onUnmounted(() => clearInterval(processChecker.value));
 
-    watch(currentIndex,
-      (index) => localStorage.setItem("currentIndex", index)
+    watch(currentIndex, (index) =>
+      localStorage.setItem("currentIndex", String(index))
     );
     watch(currentVolume, (volume) => {
       const volumeRate = volume / maxVolume.value;
-      localStorage.setItem("volumeRate", volume / maxVolume.value);
       audio.value.volume = volumeRate;
+      localStorage.setItem("volumeRate", String(volumeRate));
     });
-    watch(songList,
-      (list) => {
-        localStorage.setItem("playList", JSON.stringify(list));
-      },
-      { deep: true }
-    );
-    watch(loopMode,
-      (mode) => localStorage.setItem("loopMode", mode)
-    );
+    watch(songList, (list) => {
+      localStorage.setItem("playList", JSON.stringify(list)), { deep: true };
+    });
+    watch(loopMode, (mode) => localStorage.setItem("loopMode", String(mode)));
     watch(
       () => [songReady.value, isPlaying.value],
       ([readyState, playState]) => {
@@ -198,7 +192,6 @@ export default {
       }
       return songList.value[currentIndex.value].albumPicture || "";
     });
-
     const playButtonType = computed(() => {
       return isPlaying.value ? "el-icon-video-pause" : "el-icon-video-play";
     });
@@ -223,31 +216,11 @@ export default {
       return (currentVolume.value / maxVolume.value) * 100;
     });
 
-    const getStorageInfo = () => {
-      const storageList = localStorage.getItem("playList");
-      if (storageList !== null) {
-        songList.value = JSON.parse(storageList);
-        currentIndex.value = Number(localStorage.getItem("currentIndex"));
-      } else {
-        localStorage.setItem("currentIndex", 0);
-      }
-    };
-    const getStorageSettings = () => {
-      const storageVolumeRate = localStorage.getItem("volumeRate");
-      if (storageVolumeRate) {
-        currentVolume.value = storageVolumeRate * maxVolume.value;
-      } else {
-        localStorage.setItem(
-          "volumeRate",
-          currentVolume.value / maxVolume.value
-        );
-      }
-      const storageLoopMode = Number(localStorage.getItem("loopMode"));
-      if (storageLoopMode) {
-        loopMode.value = storageLoopMode;
-      } else {
-        localStorage.setItem("loopMode", loopMode.value);
-      }
+    const setStorageInfo = (storageInfo) => {
+      songList.value = storageInfo.songList ? storageInfo.songList : [];
+      currentIndex.value = storageInfo.currentIndex;
+      currentVolume.value = storageInfo.currentVolume;
+      loopMode.value = storageInfo.loopMode;
     };
     const audioLoaded = () => {
       songReady.value = true;
