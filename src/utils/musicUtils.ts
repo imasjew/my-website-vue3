@@ -51,17 +51,6 @@ export const getStorageInfo = () => {
 	return storageInfo;
 };
 
-// function dealStorageItem(itemName: string): string | null
-// function dealStorageItem(itemName: string, numberFlag: false): string | null
-// function dealStorageItem(itemName: string, numberFlag: true): number
-// function dealStorageItem(itemName: string, numberFlag?: boolean): string | number | null {
-// 	const val = localStorage.getItem(itemName)
-// 	if (!storageItem || storageItem === 'undefined') {
-// 		return null
-// 	}
-// 	return numberFlag ? Number(storageItem) : storageItem
-// }
-
 function dealStorageItem(itemName: string): string | null
 function dealStorageItem<T>(itemName: string, mapper: (val: string | null) => T): T | null
 function dealStorageItem<T>(itemName: string, mapper?: (val: string | null) => T): T | string | null {
