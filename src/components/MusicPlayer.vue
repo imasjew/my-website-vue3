@@ -156,9 +156,13 @@ export default {
       audio.value.volume = volumeRate;
       localStorage.setItem("volumeRate", String(volumeRate));
     });
-    watch(songList, (list) => {
-      localStorage.setItem("playList", JSON.stringify(list)), { deep: true };
-    });
+    watch(
+      () => songList.value,
+      (list) => {
+        localStorage.setItem("playList", JSON.stringify(list));
+      },
+      { deep: true }
+    );
     watch(loopMode, (mode) => localStorage.setItem("loopMode", String(mode)));
     watch(
       () => [songReady.value, isPlaying.value],

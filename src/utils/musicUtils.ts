@@ -32,10 +32,10 @@ export const formatSongList = (songs: any) => {
 };
 
 export const getStorageInfo = () => {
-	const storageList = dealStorageItem("playList", false);
-	const currentIndex = dealStorageItem("currentIndex", true);
-	const storageVolumeRate = dealStorageItem("volumeRate", true);
-	const storageLoopMode = dealStorageItem("loopMode", true);
+	const storageList = dealStorageItem("playList");
+	const currentIndex = dealStorageItem("currentIndex", mapValToNumber);
+	const storageVolumeRate = dealStorageItem("volumeRate", mapValToNumber);
+	const storageLoopMode = dealStorageItem("loopMode", mapValToNumber);
 
 	const defaultCurrentIndex = 0;
 	const defaultCurrentValue = 20;
@@ -51,14 +51,23 @@ export const getStorageInfo = () => {
 	return storageInfo;
 };
 
+// function dealStorageItem(itemName: string): string | null
+// function dealStorageItem(itemName: string, numberFlag: false): string | null
+// function dealStorageItem(itemName: string, numberFlag: true): number
+// function dealStorageItem(itemName: string, numberFlag?: boolean): string | number | null {
+// 	const val = localStorage.getItem(itemName)
+// 	if (!storageItem || storageItem === 'undefined') {
+// 		return null
+// 	}
+// 	return numberFlag ? Number(storageItem) : storageItem
+// }
+
 function dealStorageItem(itemName: string): string | null
-function dealStorageItem(itemName: string, numberFlag: false): string | null
-function dealStorageItem(itemName: string, numberFlag: true): number
-function dealStorageItem(itemName: string, numberFlag?: boolean): string | number | null {
+function dealStorageItem<T>(itemName: string, mapper: (val: string | null) => T): T | null
+function dealStorageItem<T>(itemName: string, mapper?: (val: string | null) => T): T | string | null {
 	const storageItem = localStorage.getItem(itemName)
-	if (!storageItem || storageItem === 'undefined') {
-		return null
-	}
-	return numberFlag ? Number(storageItem) : storageItem
+	return mapper ? mapper(storageItem) : storageItem
 }
+
+const mapValToNumber = (val: string | null): number | null => val ? Number(val) : null;
 
