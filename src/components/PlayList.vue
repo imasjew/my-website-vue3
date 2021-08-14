@@ -24,18 +24,19 @@
     </ul>
   </div>
 </template>
-<script>
+<script lang="ts">
 export default {
   name: "playlist",
   props: ["songList", "currentIndex"],
   emits: ["remove", "play"],
-  setup(props, { emit }) {
+  setup(props: any, { emit }: any) {
 
-    const remove = (index) => {
+    const remove = (index: number) => {
       emit("remove", index);
     };
-    const playSong = (e, index) => {
-      if (e.srcElement.className === "el-icon-delete") {
+    const playSong = (e: Event, index: number) => {
+      const targetElement = e.target as HTMLElement;
+      if (targetElement.className === "el-icon-delete") {
         return;
       }
       emit("play", index);

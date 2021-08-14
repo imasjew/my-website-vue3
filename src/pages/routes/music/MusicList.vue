@@ -70,25 +70,27 @@
 </template>
 
 
-<script>
+<script lang="ts">
 import httpService from "@/service/http.service";
 import Bus from "@/bus";
 import { ref } from "@vue/reactivity";
 import { onMounted } from "@vue/runtime-core";
 import { useRoute, useRouter } from "vue-router";
 import { ElNotification } from "element-plus";
+import { formatSongList } from '@/utils/musicUtils'
+import { SongDetail } from '@/service/interface';
 export default {
   name: "musiclist",
   setup() {
-    const input = ref("");
-    const currentIndex = ref(null);
-    const tableData = ref([]);
+    const input= ref<string>("");
+    const currentIndex = ref<number | null>(null);
+    const tableData = ref<SongDetail[]>();
     const route = useRoute();
     const router = useRouter();
 
     onMounted(() => {
       if (route.query.name) {
-        input.value = route.query.name;
+        input.value = route.query.name as string;
         searchList();
       }
     });
@@ -99,10 +101,11 @@ export default {
       }
       router.push("?name=" + input.value);
       httpService.getSongList(input.value).then(
-        (res) => {
+        (res: any) => {
           const songs = res.result.songs;
           if (songs) {
-            formatSongList(songs);
+            tableData.value = [];
+            tableData.value = formatSongList(songs);
           }
         },
         (err) => {
@@ -110,20 +113,8 @@ export default {
         }
       );
     };
-    const formatSongList = (songs) => {
-      const length = songs.length > 24 ? 24 : songs.length;
-      tableData.value = [];
-      for (let i = 0; i < length; i++) {
-        let song = {};
-        song.id = songs[i].id;
-        song.title = songs[i].name;
-        song.duration = songs[i].duration / 1000;
-        song.author = songs[i].artists[0].name;
-        song.albumName = songs[i].album.name;
-        tableData.value.push(song);
-      }
-    };
-    const addSong = (index, songId, goToLyric) => {
+
+    const addSong = (index: number, songId: number, goToLyric: boolean) => {
       httpService.checkSong(songId).then(
         () => {
           currentIndex.value = index;
@@ -137,7 +128,7 @@ export default {
         }
       );
     };
-    const showAlert = (msg) => {
+    const showAlert = (msg: string) => {
       ElNotification({
         message: msg,
       });

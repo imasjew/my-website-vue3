@@ -7,13 +7,13 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import httpService from "@/service/http.service";
 import musicplayer from "@/components/MusicPlayer.vue";
 import Bus from "@/bus";
 import { useRouter } from 'vue-router';
-import { formatSongDetail } from '@/utils/musicUtils.ts'
+import { formatSongDetail } from '@/utils/musicUtils'
 
 export default {
   name: "music",
@@ -49,7 +49,7 @@ export default {
         goToMusicList(songTitle);
       });
     }
-    const addSongDetail = (songId) => {
+    const addSongDetail = (songId: number) => {
       httpService.getFullSongDetail(songId).then(
         (res) => {
           const songDetail = formatSongDetail(res);
@@ -61,13 +61,13 @@ export default {
       );
     }
 
-    const goToLyric = (songId) => {
+    const goToLyric = (songId: number) => {
       router.push({
         path: "/home/music/musiclyric",
         query: { id: songId },
       });
     }
-    const goToMusicList = (title) => {
+    const goToMusicList = (title: string) => {
       router.push({
         path: "/home/music/musiclist",
         query: { name: title },

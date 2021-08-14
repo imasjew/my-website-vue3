@@ -100,38 +100,38 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import playlist from "@/components/PlayList.vue";
 import Slider from "@/components/Slider.vue";
 import { getStorageInfo } from "@/utils/musicUtils";
 import Bus from "@/bus";
 import volumeOnIconPng from "@/assets/icon/volume-on.png";
-import volumeOffIconPng from "@/assets/icon/volume-off.png";
+import volumeOffIconPng from "@/assets//icon/volume-off.png";
 import { computed, onMounted, ref, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
+import { SongDetail, StorageInfo } from '@/service/interface';
 
 export default {
   name: "musicplayer",
   components: { playlist, Slider },
 
   setup() {
-    const audio = ref(""); // 音频资源
-    const currentIndex = ref(0); // 当前播放编号
-    const songList = ref([]); // 歌单
+    const currentIndex = ref<number>(0); // 当前播放编号
+    const songList = ref<SongDetail[] | any>([]); // 歌单
     const songReady = ref(false); // 歌曲加载状态
     const isPlaying = ref(false); // 播放状态
     const loopMode = ref(0); // 列表循环模式
     const showList = ref(false); // 列表显示开关
     const currentTime = ref(0); // 当前进度
     const duration = ref(0); // 歌曲总时长
-    const processChecker = ref(null); // 走条计时器
+    const processChecker = ref(); // 走条计时器
     const volumeOn = ref(true); // 音量开关
     const showVolumeController = ref(false); // 显示音量滑块
     const currentVolume = ref(70); // 当前音量
     const maxVolume = ref(100); // 最大音量
     const volumeOnIcon = ref(volumeOnIconPng); // 音量开图标
     const volumeOffIcon = ref(volumeOffIconPng); // 音量关图标
-    const playerDom = ref(null);
+    const playerDom = ref(); // audio, 用HTMLAudioElement报错暂时不会修
 
     const route = useRoute();
 
@@ -142,8 +142,7 @@ export default {
       Bus.on("skipByLyric", (process) => {
         setProcessByLyric(process);
       });
-      audio.value = playerDom.value;
-      const storageInfo = getStorageInfo();
+      const storageInfo: StorageInfo = getStorageInfo();
       setStorageInfo(storageInfo);
     });
     onUnmounted(() => clearInterval(processChecker.value));
@@ -153,7 +152,7 @@ export default {
     );
     watch(currentVolume, (volume) => {
       const volumeRate = volume / maxVolume.value;
-      audio.value.volume = volumeRate;
+      playerDom.value.volume = volumeRate;
       localStorage.setItem("volumeRate", String(volumeRate));
     });
     watch(
@@ -169,7 +168,7 @@ export default {
       ([readyState, playState]) => {
         if (readyState && playState) {
           setTimeout(() => {
-            audio.value.play();
+            playerDom.value.play();
             Bus.emit("setPlayState", true);
           }, 10);
         } else {
@@ -220,7 +219,7 @@ export default {
       return (currentVolume.value / maxVolume.value) * 100;
     });
 
-    const setStorageInfo = (storageInfo) => {
+    const setStorageInfo = (storageInfo: StorageInfo) => {
       songList.value = storageInfo.songList ? storageInfo.songList : [];
       currentIndex.value = storageInfo.currentIndex;
       currentVolume.value = storageInfo.currentVolume;
@@ -239,7 +238,7 @@ export default {
       const songId = songList.value[currentIndex.value].id;
       Bus.emit("addSongDetail", songId);
     };
-    const addSong = (song) => {
+    const addSong = (song: SongDetail) => {
       if (songList.value.length !== 0) {
         checkDuplicate(song);
       } else {
@@ -248,7 +247,7 @@ export default {
       }
       playSong();
     };
-    const checkDuplicate = (song) => {
+    const checkDuplicate = (song: SongDetail) => {
       const listLength = songList.value.length;
       for (let i = 0; i <= listLength; i++) {
         if (song.id === songList.value[i].id) {
@@ -280,15 +279,15 @@ export default {
     };
     const pauseSong = () => {
       isPlaying.value = false;
-      audio.value.pause();
+      playerDom.value.pause();
       clearInterval(processChecker.value);
     };
     const checkCurrentProcess = () => {
-      duration.value = audio.value.duration;
-      currentTime.value = audio.value.currentTime;
+      duration.value = playerDom.value.duration;
+      currentTime.value = playerDom.value.currentTime;
       Bus.emit("checkLyricProcess", currentTime.value);
     };
-    const switchSong = (type) => {
+    const switchSong = (type: number) => {
       if (type === 1) {
         if (currentIndex.value === 0) {
           currentIndex.value = songList.value.length - 1;
@@ -327,7 +326,7 @@ export default {
     const toggleList = () => {
       showList.value = !showList.value;
     };
-    const removeListSong = (index) => {
+    const removeListSong = (index: number) => {
       if (currentIndex.value === index) {
         return;
       }
@@ -336,46 +335,47 @@ export default {
       }
       songList.value.splice(index, 1);
     };
-    const playListSong = (index) => {
+    const playListSong = (index: number) => {
       currentIndex.value = index;
       playSong();
     };
 
     // 进度条控制组件
-    const setProcess = (barRate) => {
+    const setProcess = (barRate: number) => {
       currentTime.value = duration.value * barRate;
-      audio.value.currentTime = currentTime.value;
+      playerDom.value.currentTime = currentTime.value;
     };
     const dragProcessMouseDown = () => {
       clearInterval(processChecker.value);
     };
-    const dragProcessMouseMove = (barRate) => {
+    const dragProcessMouseMove = (barRate: number) => {
       currentTime.value = barRate * duration.value;
     };
     const dragProcessMouseUp = () => {
-      audio.value.currentTime = currentTime.value;
+      playerDom.value.currentTime = currentTime.value;
       processChecker.value = setInterval(() => {
         checkCurrentProcess();
       }, 200);
     };
     // 点击歌词跳转进度
-    const setProcessByLyric = (process) => {
+    const setProcessByLyric = (process: number) => {
       if (isPlaying.value) {
-        audio.value.currentTime = process;
+        playerDom.value.currentTime = process;
       }
     };
     // 音量控制组件
-    const setVolume = (barRate) => {
+    const setVolume = (barRate: number) => {
       currentVolume.value = maxVolume.value * barRate;
       volumeOn.value = barRate !== 0;
     };
-    const dragVolumeMouseMove = (barRate) => {
+    const dragVolumeMouseMove = (barRate: number) => {
       setVolume(barRate);
     };
     //
-    const toggleVolumeController = (e) => {
+    const toggleVolumeController = (e: Event) => {
       // 避免点击控制条时触发
-      if (e.srcElement.className !== "volume-icon") {
+      const targetElement = e.target as HTMLElement;
+      if (targetElement.className !== "volume-icon") {
         return;
       }
       showVolumeController.value = !showVolumeController.value;
@@ -397,7 +397,6 @@ export default {
     };
 
     return {
-      audio,
       currentIndex,
       songList,
       songReady,

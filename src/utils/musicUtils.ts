@@ -1,4 +1,4 @@
-import { SongDetail, StorageInfo } from '../service/interface'
+import { SongDetail, StorageInfo, FormedLyric } from '../service/interface'
 
 export const formatSongDetail = (originInfo: any) => {
 	const songBasicInfo = originInfo[0].songs[0];
@@ -20,15 +20,47 @@ export const formatSongList = (songs: any) => {
 	const length = songs.length > 24 ? 24 : songs.length;
 	const songList: SongDetail[] = []
 	for (let i = 0; i < length; i++) {
-		const song: SongDetail = {};
-		song.id = songs[i].id;
-		song.title = songs[i].name;
-		song.duration = songs[i].duration / 1000;
-		song.author = songs[i].artists[0].name;
-		song.albumName = songs[i].album.name;
+		const song: SongDetail = {
+			id: songs[i].id,
+			title: songs[i].name,
+			duration: songs[i].duration / 1000,
+			author: songs[i].artists[0].name,
+			albumName: songs[i].album.name,
+		};
 		songList.push(song);
 	}
 	return songList
+};
+
+export const dealLyric = (originLyric: any): FormedLyric[] => {
+	// 歌词分句
+	const lyricArray = originLyric.split("\n");
+	lyricArray.pop();
+	const dealedLyricArray: FormedLyric[] = [];
+	// 每一句再通过"]"拆成时间+歌词
+	for (const i in lyricArray) {
+		lyricArray[i] = lyricArray[i].substring(1, lyricArray[i].length);
+		lyricArray[i] = lyricArray[i].split("]");
+		// 如果歌词中出现"]"造成多余拆分，合并之
+		const nowArray = lyricArray[i];
+		if (nowArray.length > 2) {
+			while (nowArray.length > 2) {
+				nowArray[1] = nowArray[1].concat(nowArray[2]);
+				nowArray.splice(2, 1);
+			}
+		}
+		dealedLyricArray.push({
+			time: lyricTimeFormat(lyricArray[i][0]),
+			lyric: lyricArray[i][1],
+		});
+	}
+	return dealedLyricArray;
+};
+
+const lyricTimeFormat = (originTime: any) => {
+	const splitedTime = originTime.split(/[:]/);
+	const dealedTime = splitedTime[0] * 60 + parseFloat(splitedTime[1]);
+	return dealedTime;
 };
 
 export const getStorageInfo = () => {
@@ -42,11 +74,12 @@ export const getStorageInfo = () => {
 	const defaultMaxVolume = 100;
 	const defaultLoopMode = 0;
 
-	const storageInfo: StorageInfo = {};
-	storageInfo.songList = (storageList !== null) ? JSON.parse(storageList) : [];
-	storageInfo.currentIndex = (currentIndex !== null) ? currentIndex : defaultCurrentIndex;
-	storageInfo.currentVolume = (storageVolumeRate !== null) ? storageVolumeRate * defaultMaxVolume : defaultCurrentValue;
-	storageInfo.loopMode = (storageLoopMode !== null) ? storageLoopMode : defaultLoopMode
+	const storageInfo: StorageInfo = {
+		songList: (storageList !== null) ? JSON.parse(storageList) : [],
+		currentIndex: (currentIndex !== null) ? currentIndex : defaultCurrentIndex,
+		currentVolume: (storageVolumeRate !== null) ? storageVolumeRate * defaultMaxVolume : defaultCurrentValue,
+		loopMode: (storageLoopMode !== null) ? storageLoopMode : defaultLoopMode
+	};
 
 	return storageInfo;
 };

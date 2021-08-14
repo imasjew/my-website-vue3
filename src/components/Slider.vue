@@ -13,7 +13,7 @@
     ></div>
   </div>
 </template>
-<script>
+<script lang="ts">
 import { computed } from "@vue/runtime-core";
 export default {
   name: "Slider",
@@ -25,13 +25,8 @@ export default {
     "forbidden",
     "isReady",
   ],
-  emits: [
-    "setPosition",
-    "dragMouseDown",
-    "dragMouseMove",
-    "dragMouseUp"
-  ],
-  setup(props, {emit}) {
+  emits: ["setPosition", "dragMouseDown", "dragMouseMove", "dragMouseUp"],
+  setup(props: any, { emit }: any) {
     const barContainerSize = computed(() => {
       if (props.verticalMode) {
         return {
@@ -49,22 +44,22 @@ export default {
       let position;
       if (props.verticalMode) {
         position = {
-          'bottom': props.currentPosition + "%",
-          'left': -props.barWeight / 2 + "px",
+          bottom: props.currentPosition + "%",
+          left: -props.barWeight / 2 + "px",
           "margin-bottom": -props.barWeight + "px",
         };
       } else {
         position = {
-          'left': props.currentPosition + "%",
-          'top': -props.barWeight / 2 + "px",
+          left: props.currentPosition + "%",
+          top: -props.barWeight / 2 + "px",
           "margin-left": -props.barWeight + "px",
         };
       }
       return {
-        'width': props.barWeight + "px",
-        'height': props.barWeight + "px",
+        width: props.barWeight + "px",
+        height: props.barWeight + "px",
         "border-radius": props.barWeight + "px",
-        'border': props.barWeight / 2 + "px solid white",
+        border: props.barWeight / 2 + "px solid white",
         ...position,
       };
     });
@@ -87,27 +82,27 @@ export default {
         ...style,
       };
     });
-    const clickPosition = (e) => {
+    const clickPosition = (e: MouseEvent) => {
       if (props.forbidden === true) {
         return;
       }
-      const layerPosition = props.verticalMode
-        ? props.barLength - e.layerY
-        : e.layerX;
-      const barRate = layerPosition / props.barLength;
+      const offsetPosition = props.verticalMode
+        ? props.barLength - e.offsetY
+        : e.offsetX;
+      const barRate = offsetPosition / props.barLength;
       emit("setPosition", barRate);
-      
-    }
-    const dragPosition = (e) => {
+    };
+    const dragPosition = (e: MouseEvent) => {
       e.stopPropagation(); // 避免触发process-handle的点击
       if (props.forbidden === true) {
         return;
       }
       emit("dragMouseDown");
       const mousedownPosition = props.verticalMode ? -e.clientY : e.clientX; // 鼠标初始绝对定位, 竖向为从下向上递增，所以取负减少后续重复判断
+      const targetElement = e.target as HTMLElement;
       const offsetPosition = props.verticalMode
-        ? -e.target.offsetTop
-        : e.target.offsetLeft; // 滑块基础相对位置
+        ? -targetElement.offsetTop
+        : targetElement.offsetLeft; // 滑块基础相对位置
       // 修正了自身体积后的滑块位置, 竖向从下向上递增，所以需额外补偿一份容器全长否
       const originHandlePosition = props.verticalMode
         ? offsetPosition - props.barWeight + props.barLength
@@ -131,15 +126,14 @@ export default {
         document.onmouseup = null;
         emit("dragMouseUp");
       };
-    }
-
+    };
 
     return {
       barContainerSize,
       barHandleStyle,
       barCurrentStyle,
       clickPosition,
-      dragPosition
+      dragPosition,
     };
   },
 };

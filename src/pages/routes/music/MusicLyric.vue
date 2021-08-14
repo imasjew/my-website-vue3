@@ -37,23 +37,25 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import httpService from "@/service/http.service";
 import Bus from "@/bus";
 import { ref, watch, onMounted, onUnmounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { dealLyric } from "@/utils/musicUtils"
+import { FormedLyric } from '@/service/interface';
 export default {
   name: "musiclyric",
   setup() {
     const router = useRouter();
     const route = useRoute();
-    const albumPictureDom = ref(null);
+    const albumPictureDom = ref();
 
     let songTitle = ref("");
-    let lyric = ref([]);
+    let lyric = ref<FormedLyric[]>();
     let albumPicture = ref("");
     let instrumental = ref(false);
-    let currentSentenceIndex = ref(null);
+    let currentSentenceIndex = ref();
 
     onMounted(() => {
       Bus.on("checkLyricProcess", (process) => {
@@ -71,8 +73,8 @@ export default {
       // 这个bug引起了179行的报错
       // 反复从歌词页退回列表再进入，还会重复订阅多次
       // 不过先屏蔽报错暂时没有引发其他明显bug
-      Bus.off("checkLyricProcess")
-      Bus.off("setPlayState")
+      // Bus.off("checkLyricProcess")
+      // Bus.off("setPlayState")
     })
     watch(
       () => route.fullPath,
@@ -82,15 +84,15 @@ export default {
     );
 
     const getPageInfo = () => {
-      const songId = router.currentRoute.value.query.id;
+      const songId = Number(router.currentRoute.value.query.id);
       if (songId) {
         getSongDetail(songId);
         getLyric(songId);
       }
     };
-    const getSongDetail = (songId) => {
+    const getSongDetail = (songId: number) => {
       httpService.getSongDetail(songId).then(
-        (res) => {
+        (res: any) => {
           songTitle.value = res.songs[0].name;
           albumPicture.value = res.songs[0].al.picUrl;
         },
@@ -99,9 +101,9 @@ export default {
         }
       );
     };
-    const getLyric = (songId) => {
+    const getLyric = (songId: number) => {
       httpService.getLyric(songId).then(
-        (res) => {
+        (res: any) => {
           if (res.lrc) {
             const originLyric = res.lrc.lyric;
             lyric.value = dealLyric(originLyric);
@@ -121,38 +123,8 @@ export default {
         }
       );
     };
-    const dealLyric = (originLyric) => {
-      // 歌词分句
-      let lyricArray = originLyric.split("\n");
-      lyricArray.pop();
-      let dealedLyricArray = [];
-      // 每一句再通过"]"拆成时间+歌词
-      for (let i in lyricArray) {
-        lyricArray[i] = lyricArray[i].substring(1, lyricArray[i].length);
-        lyricArray[i] = lyricArray[i].split("]");
-        // 如果歌词中出现"]"造成多余拆分，合并之
-        const nowArray = lyricArray[i];
-        if (nowArray.length > 2) {
-          while (nowArray.length > 2) {
-            nowArray[1] = nowArray[1].concat(nowArray[2]);
-            nowArray.splice(2, 1);
-          }
-        }
-        dealedLyricArray.push({
-          time: lyricTimeFormat(lyricArray[i][0]),
-          lyric: lyricArray[i][1],
-        });
-      }
-      return dealedLyricArray;
-    };
-    const lyricTimeFormat = (originTime) => {
-      const splitedTime = originTime.split(/[:]/);
-      const dealedTime = parseFloat(
-        splitedTime[0] * 60 + parseFloat(splitedTime[1])
-      );
-      return dealedTime;
-    };
-    const checkLyricProcess = (process) => {
+
+    const checkLyricProcess = (process: number) => {
       if (!lyric.value) {
         return;
       }
@@ -174,10 +146,10 @@ export default {
         }
       }
     };
-    const skipByLyric = (time) => {
+    const skipByLyric = (time: number) => {
       Bus.emit("skipByLyric", time);
     };
-    const setPlayState = (state) => {
+    const setPlayState = (state: boolean) => {
       // 70行Bus.off无法生效，导致渲染页面前就调用Bus.on拿不到dom报错，先避免报错凑合用
       if(!albumPictureDom.value) {
         return
