@@ -16,7 +16,6 @@ export default {
     const timer = ref();
     const router = useRouter()
 
-
     onMounted(() => {
       timer.value = setInterval(() => {
       setTime();
