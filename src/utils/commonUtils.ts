@@ -1,3 +1,5 @@
+import { ElNotification } from "element-plus";
+
 export const formatDate = (value: number) => {
 	const minutes = Math.floor((value % (60 * 60)) / 60);
 	let formedMinutes: string;
@@ -15,3 +17,19 @@ export const formatDate = (value: number) => {
 	}
 	return formedMinutes + ":" + formedSeconds;
 }
+
+export const showSuccess = (title: string, msg: string = "") => {
+	ElNotification({
+		title: title,
+		message: msg,
+		type: "success",
+	});
+};
+
+export const showReject = (title: string, msg: string = "") => {
+	ElNotification({
+		title: title,
+		message: msg,
+		type: "error",
+	});
+};

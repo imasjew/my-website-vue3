@@ -8,9 +8,9 @@
 <script lang="ts">
 import httpService from "@/service/http.service";
 import accountService from "@/service/account.service";
-import { ElNotification } from 'element-plus'
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router'
+import { showReject, showSuccess } from '@/utils/commonUtils';
 
 export default {
   name: "dashboard",
@@ -30,18 +30,6 @@ export default {
           accountService.logout();
         }
       );
-    }
-    const showSuccess = (title: string) => {
-      ElNotification({
-        title: title,
-        type: 'success',
-      });
-    }
-    const showReject = (title: string) => {
-      ElNotification({
-        title: title,
-        type: 'error',
-      });
     }
     return {
       checkAuth

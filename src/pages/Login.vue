@@ -23,13 +23,13 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { useRouter } from "vue-router";
 import httpService from "@/service/http.service";
 import accountService from "@/service/account.service";
 import { reactive, ref } from "@vue/reactivity";
-import { ElNotification } from 'element-plus';
-import { nextTick } from '@vue/runtime-core';
+import { nextTick } from "@vue/runtime-core";
+import { showReject, showSuccess } from '@/utils/commonUtils';
 export default {
   name: "login",
 
@@ -40,7 +40,17 @@ export default {
       name: "",
       pswd: "",
     });
-    console.log('ruleForm', ruleForm.name)
+    console.log("ruleForm", ruleForm.name);
+
+    const validatePass = (rule: any, value: any, callback: any) => {
+      if (value === "") {
+        callback(new Error("请输入密码"));
+      } else {
+        // 放正则
+        callback();
+      }
+    };
+
     const rules = ref({
       name: [
         { required: true, message: "请输入账号", trigger: "blur" },
@@ -54,26 +64,13 @@ export default {
       pswd: [{ required: true, validator: validatePass, trigger: "blur" }],
     });
 
-    const validatePass = (rule, value, callback) => {
-      if (value === "") {
-        callback(new Error("请输入密码"));
-      } else {
-        // 放正则
-        callback();
-      }
-    };
-
-    // const checkValid = () => {
-    //   return ruleFormRef.value.validate();
-    // };
-
     const login = () => {
       if (!ruleFormRef.value.validate()) {
         console.log("格式不规范");
         return;
       }
       httpService.login(ruleForm.name, ruleForm.pswd).then(
-        (res) => {
+        (res: any) => {
           accountService.login(ruleForm.name, res.token);
           toHome();
           nextTick(() => {
@@ -82,13 +79,12 @@ export default {
         },
         (err) => {
           showReject("登录失败", err.data.message);
-
         }
       );
     };
 
     const register = () => {
-      ruleFormRef.value.validate((valid) => {
+      ruleFormRef.value.validate((valid: boolean) => {
         if (valid) {
           httpService.register(ruleForm.name, ruleForm.pswd).then(
             () => {
@@ -109,22 +105,6 @@ export default {
       router.push({
         name: "dashboard",
       });
-    };
-
-    const showSuccess = (title, msg) => {
-      ElNotification({
-        title: title,
-        message: msg,
-        type: "success",
-      })
-    };
-
-    const showReject = (title, msg) => {
-      ElNotification({
-        title: title,
-        message: msg,
-        type: "error",
-      })
     };
 
     return {
