@@ -24,44 +24,57 @@
   </el-container>
 </template>
 
-<script>
+<script lang="ts">
 import accountService from "@/service/account.service";
+import { ref } from '@vue/reactivity';
+import { onMounted } from '@vue/runtime-core';
+import { useRoute, useRouter } from 'vue-router';
 export default {
   name: "layout",
-  data() {
-    return {
-      activeIndex: "",
-      Routes: ["dashboard", "shopping", "music", "game"],
-    };
-  },
-  created() {
-    // 查询当前路径隶属根路由，解决添加二级子路由时导航栏无选中状态bug
-    const rootRoute = this.checkSameRoutes();
-    this.activeIndex = rootRoute;
-  },
-  methods: {
-    handleSelect(key) {
+  setup() {
+    const activeIndex = ref("");
+    const Routes = ref(["dashboard", "shopping", "music", "game"])
+    const router = useRouter();
+    const route = useRoute();
+
+    onMounted(() => {
+      const rootRoute = checkSameRoutes();
+      activeIndex.value = rootRoute;
+    })
+
+
+    const handleSelect = (key: string) => {
       if (key === "logout") {
         accountService.logout();
-        this.$router.push("/login");
+        router.push("/login");
         return;
       }
       // 避免已在该标签下时，额外跳转，丢失子路由
       const adress = "home/" + key;
-      if (this.$route.fullPath.indexOf(adress) >= 0) {
+      if (route.fullPath.indexOf(adress) >= 0) {
         return;
       }
-      this.$router.push("/home/" + key);
-    },
-    checkSameRoutes() {
-      const routesLen = this.Routes.length;
+      router.push("/home/" + key);
+    }
+    const checkSameRoutes = () => {
+      const routesLen = Routes.value.length;
       for (let i = 0; i < routesLen; i++) {
-        if (this.$route.fullPath.indexOf(this.Routes[i]) >= 0) {
-          return this.Routes[i];
+        if (route.fullPath.indexOf(Routes.value[i]) >= 0) {
+          return Routes.value[i];
         }
       }
-    },
-  },
+      return Routes.value[0];
+    }
+
+    return {
+      activeIndex,
+      Routes,
+      handleSelect,
+    }
+  }
+
+
+
 };
 </script>
 

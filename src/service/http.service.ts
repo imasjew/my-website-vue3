@@ -1,5 +1,5 @@
 import APIURL from './apiurl.config';
-import accountService from "@/service/account.service";
+import accountService from "./account.service";
 import axios from 'axios';
 
 // function request(config, success, failure) {
@@ -33,14 +33,14 @@ function setToken() {
 }
 
 const httpService = {
-  register(name, pswd) {
+  register(name: string, pswd: string) {
     const data = {
       name: name,
       pswd: pswd
     }
     return axios.post(APIURL.register, data)
   },
-  login(name, pswd) {
+  login(name: string, pswd: string) {
     const data = {
       name: name,
       pswd: pswd
@@ -50,22 +50,22 @@ const httpService = {
   auth() {
     return axios.post(APIURL.auth, {}, setToken())
   },
-  getSongList(key) {
+  getSongList(key: string) {
     return axios.get(APIURL.song_list + key)
   },
-  checkSong(id) {
+  checkSong(id: number) {
     return axios.get(APIURL.check_song + id)
   },
-  getSongDetail(id) {
+  getSongDetail(id: number) {
     return axios.get(APIURL.get_song_detail + id)
   },
-  getSongUrl(id) {
+  getSongUrl(id: number) {
     return axios.get(APIURL.song_url + id)
   },
-  getLyric(id) {
+  getLyric(id: number) {
     return axios.get(APIURL.get_lyric + id)
   },
-  getFullSongDetail(id) {
+  getFullSongDetail(id: number) {
     return Promise.all([
       new Promise((resolve, reject) => {
         httpService.getSongDetail(id).then(

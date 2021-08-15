@@ -5,33 +5,40 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import { ref } from '@vue/reactivity';
+import { useRouter } from 'vue-router';
+import { onMounted } from '@vue/runtime-core';
 export default {
   name: 'errorpage',
-  data() {
-    return {
-      time: 5,
-      timer: ''
-    }
-  },
-  methods: {
-    setTime() {
-      this.time--;
-    },
-    goLoggin() {
-      clearInterval(this.timer);
-      this.$router.push('/login');
-    }
-  },
-  mounted() {
-    this.timer = setInterval(() => {
-      this.setTime();
-      if (this.time < 0) {
-        clearInterval(this.timer);
-        this.goLoggin()
+  setup() {
+    const time = ref(5);
+    const timer = ref();
+    const router = useRouter()
+
+
+    onMounted(() => {
+      timer.value = setInterval(() => {
+      setTime();
+      if (time.value < 1) {
+        clearInterval(timer.value);
+        goLoggin()
       }
     }, 1000);
-  },
+    })
+    const setTime = () => {
+      time.value--;
+    }
+    const goLoggin = () => {
+      clearInterval(timer.value);
+      router.push('/login');
+    }
+
+    return {
+      time,
+      goLoggin,
+    }
+  }
 }
 </script>
 

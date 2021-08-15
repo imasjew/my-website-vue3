@@ -5,7 +5,7 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import httpService from "@/service/http.service";
 import accountService from "@/service/account.service";
 import { ElNotification } from 'element-plus'
@@ -21,27 +21,26 @@ export default {
     const router = useRouter();
     const checkAuth = () => {
       httpService.auth().then(
-        (res) => {
+        (res: any) => {
           showSuccess(res.message);
         },
         (err) => {
           showReject(err.data.message);
-          router.push("/errorpage");
+          router.push('/errorpage');
           accountService.logout();
         }
       );
     }
-    const showSuccess = (title, msg) => {
+    const showSuccess = (title: string) => {
       ElNotification({
         title: title,
-        message: msg,
-        type: "success",
+        type: 'success',
       });
     }
-    const showReject = (title, msg) => {
+    const showReject = (title: string) => {
       ElNotification({
         title: title,
-        message: msg,
+        type: 'error',
       });
     }
     return {
